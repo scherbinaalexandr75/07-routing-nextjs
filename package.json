@@ -1,5 +1,5 @@
 {
-  "name": "06-notehub-nextjs",
+  "name": "07-routing-nextjs",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.81.2",
+    "@tanstack/react-query-devtools": "^5.81.5",
     "axios": "^1.10.0",
     "formik": "^2.4.6",
     "next": "15.3.4",

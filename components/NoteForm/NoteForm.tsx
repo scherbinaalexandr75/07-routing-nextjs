@@ -1,66 +1,64 @@
-import css from './NoteForm.module.css';
 import { useId } from 'react';
-import { Form, Formik, Field, ErrorMessage } from 'formik';
-import type { FormikHelpers } from 'formik';
-import { object, string } from 'yup';
+import css from './NoteForm.module.css';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
+import type { NoteInput } from '../../types/note';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createNote } from '@/lib/api';
+import { createNote } from '../../lib/api';
 import toast from 'react-hot-toast';
 
 interface NoteFormProps {
-  onClose: () => void;
+  cancel: () => void;
 }
 
-interface FormValues {
-  title: string;
-  content?: string;
-  tag: 'Todo' | 'Work' | 'Personal' | 'Meeting' | 'Shopping';
-}
+const initValues: NoteInput = {
+  title: '',
+  content: '',
+  tag: 'Todo',
+};
 
-export default function NoteForm({ onClose }: NoteFormProps) {
+const NoteSchema = Yup.object().shape({
+  title: Yup.string()
+    .min(3, 'Title must be at least 3 characters')
+    .max(50, 'Title is too long')
+    .required('Title is required'),
+  content: Yup.string().max(500, 'Content is too long'),
+  tag: Yup.string().oneOf(
+    ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'],
+    'Invalid tag'
+  ),
+});
+
+export default function NoteForm({ cancel }: NoteFormProps) {
   const fieldId = useId();
-  const queryClient = useQueryClient();
 
-  const { mutateAsync } = useMutation({
-    mutationFn: createNote,
+  const queryClient = useQueryClient();
+  const { mutate, isPending } = useMutation({
+    mutationFn: (newNote: NoteInput) => createNote(newNote),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-      toast.success('Note created successfully');
-      onClose();
+      queryClient.invalidateQueries({ queryKey: ['note'] });
+      cancel();
     },
     onError: () => {
-      toast.error('Something went wrong, please, try again.');
+      toast.error('The Note didn`t create.. Try again!');
     },
   });
 
-  const handleSubmit = async (
-    values: FormValues,
-    { resetForm }: FormikHelpers<FormValues>
-  ) => {
-    await mutateAsync(values);
-    resetForm();
+  const handleCancel = () => {
+    cancel();
+  };
+
+  const noteFormSubmit = (values: NoteInput) => {
+    mutate(values);
   };
 
   return (
-    <Formik
-      initialValues={{ title: '', content: '', tag: 'Todo' }}
-      onSubmit={handleSubmit}
-      validationSchema={object({
-        title: string()
-          .min(3, 'Title must be at least 3 characters')
-          .max(50, 'Title must be at most 50 characters')
-          .required('Title is required'),
-
-        content: string().max(500, 'Content must be at most 500 characters'),
-        tag: string()
-          .oneOf(
-            ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'],
-            'Invalid tag'
-          )
-          .required('Tag is required'),
-      })}
-    >
-      {({ isSubmitting }) => (
+    <>
+      <Formik
+        initialValues={initValues}
+        onSubmit={noteFormSubmit}
+        validationSchema={NoteSchema}
+      >
         <Form className={css.form}>
           <div className={css.formGroup}>
             <label htmlFor={`${fieldId}-title`}>Title</label>
@@ -110,20 +108,20 @@ export default function NoteForm({ onClose }: NoteFormProps) {
             <button
               type="button"
               className={css.cancelButton}
-              onClick={onClose}
+              onClick={handleCancel}
             >
               Cancel
             </button>
             <button
               type="submit"
               className={css.submitButton}
-              disabled={isSubmitting}
+              disabled={isPending}
             >
-              Create note
+              {isPending ? 'Creating new note...' : 'Create note'}
             </button>
           </div>
         </Form>
-      )}
-    </Formik>
+      </Formik>
+    </>
   );
 }

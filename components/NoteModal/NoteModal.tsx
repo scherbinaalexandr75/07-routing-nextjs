@@ -44,7 +44,7 @@ export default function NoteModal({ onClose }: NoteModalProps) {
       onClick={handleClickCloser}
     >
       <div className={css.modal}>
-        <NoteForm onClose={onClose} />
+        <NoteForm cancel={onClose} />
       </div>
     </div>
   );
